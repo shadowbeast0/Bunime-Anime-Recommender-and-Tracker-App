@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: anime-recommendation-api
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: MONGO_URL
+        sync: false
+      - key: DATABASE_NAME
+        value: animetracker
+      - key: BACKEND_CORS_ORIGINS
+        sync: false
+
+  - type: web
+    name: anime-recommendation-frontend
+    runtime: node
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
