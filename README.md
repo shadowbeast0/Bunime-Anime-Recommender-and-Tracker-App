@@ -196,16 +196,4 @@ Every push to `master` runs [`.github/workflows/deploy-pages.yml`](.github/workf
 
 ---
 
-## 🛠️ Fixed in this release
-
-- **Deployable as a static site:** the app no longer needs a running server or database.
-- **Franchise grouping:** "Re:ZERO" was cut down to "Re" at the colon, and One Piece films weren't grouped. Both now group correctly.
-- **Backend export crash:** the export endpoint crashed because `datetime` wasn't imported.
-- **ID collisions:** AniList search results could overwrite unrelated MyAnimeList entries with the same ID.
-- **Season sync:** the daily season sync wiped English titles, media types and franchise keys.
-- **Phone gestures:** episode tracking and hiding a title needed double-click and double-right-click, which don't exist on phones. They're now buttons.
-- **Tablet overflow:** cards overflowed on tablets, and the poster strip stretched the page sideways.
-- **Placeholder image:** the default cover was a 0-byte file. It's now a real placeholder.
-- **Smaller fixes:** login labels weren't linked to their inputs; the Thriller preference matched nothing; and the notification bell did nothing. The bell is now a "surprise me" button.
-
 <p align="center"><sub>Anime data from <a href="https://myanimelist.net">MyAnimeList</a> via <a href="https://jikan.moe">Jikan</a>. Poster images belong to their respective studios.</sub></p>
