@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 420" width="1280" height="420" role="img" aria-label="Bunime: track, rate and discover anime">
+  <defs>
+    <pattern id="tone" width="9" height="9" patternUnits="userSpaceOnUse">
+      <circle cx="4.5" cy="4.5" r="1.9" fill="#000"/>
+    </pattern>
+    <pattern id="toneFine" width="6" height="6" patternUnits="userSpaceOnUse">
+      <circle cx="3" cy="3" r="1" fill="#000" opacity="0.55"/>
+    </pattern>
+    <clipPath id="pA"><rect x="24" y="24" width="760" height="372"/></clipPath>
+    <clipPath id="pC"><rect x="802" y="214" width="454" height="182"/></clipPath>
+  </defs>
+
+  <!-- newsprint page -->
+  <rect width="1280" height="420" fill="#e8e7e1"/>
+  <rect x="12" y="12" width="1256" height="396" fill="#fff" stroke="#000" stroke-width="4"/>
+
+  <!-- panel A: title with speed lines -->
+  <g clip-path="url(#pA)">
+    <rect x="24" y="24" width="760" height="372" fill="#fff"/>
+    <g stroke="#000" stroke-width="2.2">
+      <line x1="404" y1="520" x2="-200" y2="0"/><line x1="404" y1="520" x2="-120" y2="-60"/>
+      <line x1="404" y1="520" x2="-20" y2="-100"/><line x1="404" y1="520" x2="80" y2="-120"/>
+      <line x1="404" y1="520" x2="180" y2="-130"/><line x1="404" y1="520" x2="280" y2="-140"/>
+      <line x1="404" y1="520" x2="380" y2="-140"/><line x1="404" y1="520" x2="480" y2="-140"/>
+      <line x1="404" y1="520" x2="580" y2="-130"/><line x1="404" y1="520" x2="680" y2="-120"/>
+      <line x1="404" y1="520" x2="780" y2="-100"/><line x1="404" y1="520" x2="880" y2="-60"/>
+      <line x1="404" y1="520" x2="980" y2="0"/><line x1="404" y1="520" x2="1040" y2="80"/>
+      <line x1="404" y1="520" x2="-260" y2="80"/>
+    </g>
+    <ellipse cx="404" cy="235" rx="360" ry="150" fill="#fff"/>
+    <text x="404" y="262" text-anchor="middle" font-family="'Arial Black', 'Helvetica Neue', Arial, sans-serif" font-weight="900" font-size="132" letter-spacing="-3" fill="#000">BUN<tspan fill="#e4007f">IME</tspan></text>
+    <rect x="166" y="290" width="476" height="44" fill="#000"/>
+    <text x="404" y="321" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="22" fill="#ffe100">Track it. Rate it. Find the next one.</text>
+  </g>
+  <rect x="24" y="24" width="760" height="372" fill="none" stroke="#000" stroke-width="6"/>
+
+  <!-- panel B: katakana on ink -->
+  <rect x="802" y="24" width="454" height="172" fill="#000"/>
+  <text x="1029" y="136" text-anchor="middle" font-family="'Yu Gothic', 'Hiragino Sans', 'Noto Sans JP', sans-serif" font-weight="900" font-size="88" fill="#fff">ブニメ</text>
+  <text x="1029" y="176" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="18" fill="#ffe100">anime tracker &amp; recommender</text>
+
+  <!-- panel C: yellow screentone with a speech bubble -->
+  <g clip-path="url(#pC)">
+    <rect x="802" y="214" width="454" height="182" fill="#ffe100"/>
+    <rect x="802" y="214" width="454" height="182" fill="url(#tone)"/>
+    <path d="M1180 300 L1256 396 L1256 300 Z" fill="#e4007f"/>
+  </g>
+  <rect x="802" y="214" width="454" height="182" fill="none" stroke="#000" stroke-width="6"/>
+  <g>
+    <ellipse cx="1000" cy="296" rx="168" ry="56" fill="#fff" stroke="#000" stroke-width="4"/>
+    <path d="M920 338 L890 378 L955 346 Z" fill="#fff" stroke="#000" stroke-width="4" stroke-linejoin="round"/>
+    <rect x="910" y="330" width="60" height="14" fill="#fff"/>
+    <text x="1000" y="290" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="24" fill="#000">So… what do I</text>
+    <text x="1000" y="318" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="24" fill="#000">watch next?!</text>
+  </g>
+
+  <!-- corner screentone on panel A -->
+  <rect x="30" y="300" width="120" height="90" fill="url(#toneFine)"/>
+</svg>

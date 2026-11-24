@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 450">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2a0f4f"/>
+      <stop offset="0.55" stop-color="#14123a"/>
+      <stop offset="1" stop-color="#3a0d34"/>
+    </linearGradient>
+    <pattern id="dots" width="10" height="10" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.2" fill="#ff3d8b" opacity="0.25"/>
+    </pattern>
+  </defs>
+  <rect width="300" height="450" fill="url(#g)"/>
+  <rect width="300" height="450" fill="url(#dots)"/>
+  <g stroke="#3df5ff" stroke-opacity="0.18" stroke-width="2">
+    <line x1="150" y1="225" x2="0" y2="0"/><line x1="150" y1="225" x2="300" y2="0"/>
+    <line x1="150" y1="225" x2="0" y2="450"/><line x1="150" y1="225" x2="300" y2="450"/>
+    <line x1="150" y1="225" x2="150" y2="0"/><line x1="150" y1="225" x2="0" y2="225"/>
+    <line x1="150" y1="225" x2="300" y2="225"/><line x1="150" y1="225" x2="150" y2="450"/>
+  </g>
+  <circle cx="150" cy="205" r="62" fill="#ff3d8b" opacity="0.9"/>
+  <text x="150" y="232" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="76" font-weight="900" fill="#fff">B</text>
+  <text x="150" y="330" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" font-weight="700" letter-spacing="8" fill="#3df5ff">BUNIME</text>
+</svg>

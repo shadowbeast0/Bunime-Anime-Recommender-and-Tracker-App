@@ -11,7 +11,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from motor.motor_asyncio import AsyncIOMotorClient
 from app.core.config import settings
-
+from app.services.franchise import assign_franchises
 
 def parse_list(value) -> list[str]:
     if pd.isna(value) or value in (None, ""):
@@ -29,35 +29,18 @@ def parse_list(value) -> list[str]:
         return [str(item).strip() for item in parsed if str(item).strip()]
     return [str(parsed).strip()] if str(parsed).strip() else []
 
-
 def parse_optional_int(value):
     if pd.isna(value) or value in (None, "", 0, "0"):
         return None
     return int(float(value))
-
 
 def parse_optional_float(value):
     if pd.isna(value) or value in (None, ""):
         return None
     return float(value)
 
-
 def normalize_status(value: str) -> str:
     return str(value or "Unknown").replace("_", " ").title()
-
-
-def franchise_name(title: str) -> str:
-    """Create a conservative browse-group label for seasons, films, and extras."""
-    name = re.sub(r"\([^)]*\)", "", title or "").strip()
-    name = re.sub(r"\b(season|part|cour)\s*\d+\b", "", name, flags=re.I)
-    name = re.sub(r"\b\d+(st|nd|rd|th)\s+season\b", "", name, flags=re.I)
-    name = re.sub(r"\b(movie|film|ova|ona|special|recap|episode)\b.*$", "", name, flags=re.I)
-    name = re.split(r"\s*[:\-–—]\s*", name)[0].strip()
-    return name or title
-
-
-def franchise_key(title: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "-", franchise_name(title).lower()).strip("-") or "misc"
 
 async def load_csv_to_mongo(csv_path: str):
     client = AsyncIOMotorClient(settings.MONGO_URL)
@@ -74,6 +57,7 @@ async def load_csv_to_mongo(csv_path: str):
         raise ValueError("CSV must contain either image_url or main_picture")
 
     operations = []
+    records = []
 
     loaded_count = 0
     for _, row in df.iterrows():
@@ -83,13 +67,10 @@ async def load_csv_to_mongo(csv_path: str):
             continue
 
         english_title = "" if pd.isna(row.get("title_english")) else str(row.get("title_english")).strip()
-        primary_title = english_title or str(row["title"])
         anime_data = {
             "anime_id": int(row["anime_id"]),
             "title": str(row["title"]),
             "english_title": english_title or str(row["title"]),
-            "group_title": franchise_name(primary_title),
-            "group_key": franchise_key(primary_title),
             "synopsis": "" if pd.isna(row["synopsis"]) else str(row["synopsis"]),
             "genres": genres,
             "demographics": parse_list(row.get("demographics")),
@@ -100,18 +81,16 @@ async def load_csv_to_mongo(csv_path: str):
             "status": normalize_status(row["status"]),
             "media_type": str(row.get("type", "Unknown") or "Unknown").upper(),
             "score": parse_optional_float(row["score"]),
+            "members": parse_optional_int(row.get("members")),
             "last_updated": datetime.now(timezone.utc)
         }
 
-        operations.append(
-            db.anime.update_one(
-                {"anime_id": anime_data["anime_id"]},
-                {"$set": anime_data},
-                upsert=True
-            )
-        )
-        loaded_count += 1
+        records.append(anime_data)
 
+    assign_franchises(records)
+    for anime_data in records:
+        operations.append(db.anime.update_one({"anime_id": anime_data["anime_id"]}, {"$set": anime_data}, upsert=True))
+        loaded_count += 1
         if len(operations) >= 500:
             await asyncio.gather(*operations)
             operations = []

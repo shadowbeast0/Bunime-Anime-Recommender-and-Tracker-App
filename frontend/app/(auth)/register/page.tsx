@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
+import AuthShell from "@/components/features/AuthShell";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -15,103 +15,32 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     setError("");
     setIsLoading(true);
-
     try {
       await api.register({ username, email, password });
-      
-      const formData = new URLSearchParams();
-      formData.append("username", username);
-      formData.append("password", password);
-      
-      const loginData = await api.login(formData);
-      localStorage.setItem("token", loginData.access_token);
-      router.push("/dashboard");
-    } catch (err: any) {
-      setError(err.message || "Registration failed. Please try again.");
+      await api.login(username, password);
+      router.push("/dashboard/");
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Registration failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="auth-page">
-      <div className="auth-art">
-        <div className="auth-art-content">
-          <div className="eyebrow">Build your personal anime universe</div>
-          <h1>Make room for stories that stay with you.</h1>
-          <p>One place for every series, every rating, and every recommendation that feels a little too accurate.</p>
-        </div>
-      </div>
-      <div className="auth-form-side">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="auth-card"
-      >
-        <Link href="/" className="brand-mark"><span>B</span> BUNIME</Link>
-        <h2>Create your account</h2>
-        <p className="auth-subtitle">Start building a watchlist that actually feels like yours.</p>
-
-        {error && (
-          <div className="auth-error">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="auth-form">
-          <div className="field">
-            <label htmlFor="username">Username</label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className=""
-              required
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="email">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className=""
-              required
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className=""
-              required
-              minLength={6}
-            />
-          </div>
-          
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="auth-submit"
-          >
-            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Sign Up"}
-          </button>
-        </form>
-
-        <p className="auth-footer">
-          Already have an account?{" "}
-          <Link href="/login" className="text-primary hover:underline font-medium">
-            Sign in
-          </Link>
-        </p>
-      </motion.div>
-      </div>
-    </div>
+    <AuthShell headline="Every series you’ve watched, on one shelf.">
+      <div><h2>Create account</h2><p className="help">A watchlist that actually feels like yours.</p></div>
+      {error && <div className="notice" role="alert">{error}</div>}
+      <form onSubmit={handleSubmit}>
+        <div className="field"><label htmlFor="username">Username</label><input id="username" autoComplete="username" minLength={3} value={username} onChange={(event) => setUsername(event.target.value)} required /></div>
+        <div className="field"><label htmlFor="email">Email</label><input id="email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></div>
+        <div className="field"><label htmlFor="password">Password</label><input id="password" type="password" autoComplete="new-password" minLength={6} value={password} onChange={(event) => setPassword(event.target.value)} required /></div>
+        <button type="submit" className="btn btn-hot" disabled={isLoading}>{isLoading ? <Loader2 size={18} className="spin" /> : "Create account"}</button>
+      </form>
+      <p className="auth-foot">Already have an account? <Link href="/login/">Sign in</Link></p>
+    </AuthShell>
   );
 }

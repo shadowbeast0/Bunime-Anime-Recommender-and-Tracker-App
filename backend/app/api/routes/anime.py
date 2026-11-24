@@ -9,7 +9,6 @@ from app.database import get_database
 router = APIRouter()
 SAFE_ANIME_FILTER = {"genres": {"$nin": ["Hentai"]}}
 
-
 def jikan_to_anime(item: dict[str, Any]) -> dict[str, Any]:
     return {
         "anime_id": item["mal_id"],
@@ -22,11 +21,10 @@ def jikan_to_anime(item: dict[str, Any]) -> dict[str, Any]:
         "image_url": item.get("images", {}).get("jpg", {}).get("large_image_url", ""),
         "total_episodes": item.get("episodes"),
         "current_episodes": item.get("episodes") or 0,
-        "status": str(item.get("status") or "Unknown").replace("Finished Airing", "Finished Airing"),
+        "status": str(item.get("status") or "Unknown"),
         "media_type": str(item.get("type") or "Unknown").upper(),
         "score": item.get("score"),
     }
-
 
 async def search_jikan(query: str, limit: int, db: Any) -> list[dict[str, Any]]:
     try:
@@ -52,12 +50,11 @@ async def search_jikan(query: str, limit: int, db: Any) -> list[dict[str, Any]]:
         results.append(anime)
     return results
 
-
 def anilist_to_anime(item: dict[str, Any]) -> dict[str, Any]:
     title = item.get("title") or {}
     description = re.sub(r"<[^>]+>", "", item.get("description") or "").strip()
     return {
-        "anime_id": item["id"],
+        "anime_id": item.get("idMal") or 800000 + item["id"],
         "title": title.get("romaji") or title.get("english") or "Untitled",
         "english_title": title.get("english") or title.get("romaji") or "Untitled",
         "synopsis": description,
@@ -72,13 +69,12 @@ def anilist_to_anime(item: dict[str, Any]) -> dict[str, Any]:
         "score": (item.get("averageScore") or 0) / 10 or None,
     }
 
-
 async def search_anilist(query: str, limit: int, db: Any) -> list[dict[str, Any]]:
     graphql_query = """
     query ($search: String!, $perPage: Int!) {
       Page(perPage: $perPage) {
         media(search: $search, type: ANIME, isAdult: false) {
-          id title { romaji english } description genres tags { name } coverImage { extraLarge } episodes status type averageScore
+          id idMal title { romaji english } description genres tags { name } coverImage { extraLarge } episodes status type averageScore
         }
       }
     }
@@ -102,7 +98,6 @@ async def search_anilist(query: str, limit: int, db: Any) -> list[dict[str, Any]
         anime["id"] = str(anime["anime_id"])
         results.append(anime)
     return results
-
 
 async def search_kitsu(query: str, limit: int, db: Any) -> list[dict[str, Any]]:
     try:
@@ -199,7 +194,6 @@ async def search_anime(
             animes.append(doc)
     return animes
 
-
 @router.get("/groups")
 async def list_anime_groups(
     limit: int = Query(30, le=100),
@@ -242,7 +236,6 @@ async def list_anime_groups(
             "anime": anime,
         })
     return groups
-
 
 @router.get("/group/{group_key}")
 async def get_anime_group(group_key: str, db: Any = Depends(get_database)):

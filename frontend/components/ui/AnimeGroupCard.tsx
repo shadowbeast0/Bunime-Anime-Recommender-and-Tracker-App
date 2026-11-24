@@ -1,18 +1,20 @@
 import Link from "next/link";
 import { Layers } from "lucide-react";
+import { coverFallback, DEFAULT_COVER } from "@/lib/basePath";
+import type { Anime } from "@/lib/types";
 
-type AnimeGroup = {
-  group_key: string;
-  title: string;
-  count: number;
-  media_types: string[];
-  anime: { image_url: string; title: string; english_title?: string | null; synopsis?: string; genres: string[] };
-};
+export type AnimeGroup = { group_key: string; title: string; count: number; media_types: string[]; anime: Anime };
 
 export default function AnimeGroupCard({ group }: { group: AnimeGroup }) {
-  const title = group.title || group.anime.english_title || group.anime.title;
-  return <Link className="anime-group-card" href={`/anime/group/${encodeURIComponent(group.group_key)}`}>
-    <img src={group.anime.image_url || "/default-cover.png"} alt="" />
-    <div><span className="group-count"><Layers size={13} /> {group.count} title{group.count === 1 ? "" : "s"}</span><h3>{title}</h3><p>{group.anime.synopsis || "Open this group to explore its seasons and films."}</p><small>{group.media_types.map((type) => type === "TV" ? "Series" : type).join(" · ")}</small></div>
-  </Link>;
+  const formats = [...new Set(group.media_types.map((type) => (type === "TV" ? "Series" : type === "MOVIE" ? "Movies" : type)))].slice(0, 3);
+  return (
+    <Link className="franchise-card" href={`/franchise/?key=${encodeURIComponent(group.group_key)}`}>
+      <img src={group.anime.image_url || DEFAULT_COVER} alt="" loading="lazy" onError={coverFallback} />
+      <span className="franchise-count"><Layers size={12} /> Franchise</span>
+      <div>
+        <h3>{group.title}</h3>
+        <small>{group.count} entries: {formats.join(", ").toLowerCase()}</small>
+      </div>
+    </Link>
+  );
 }

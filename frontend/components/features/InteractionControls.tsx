@@ -3,39 +3,22 @@
 import { useEffect, useState } from "react";
 import { Loader2, Star, X } from "lucide-react";
 import { api } from "@/lib/api";
+import type { UserInteraction } from "@/lib/types";
 
-export const WATCH_STATUSES = [
-  "Plan to Watch",
-  "Watching",
-  "Completed",
-  "On Hold",
-  "Dropped",
-  "New Release",
-] as const;
+export type { UserInteraction };
 
-export type UserInteraction = {
-  anime_id: number;
-  watch_status: string;
-  episodes_watched?: number;
-  watched_episodes?: string[];
-  rating?: number | null;
-};
+export const WATCH_STATUSES = ["Plan to Watch", "Watching", "Completed", "On Hold", "Dropped"] as const;
 
 interface InteractionControlsProps {
   animeId: number;
+  totalEpisodes?: number | null;
   initialInteraction?: UserInteraction;
   onSaved?: (interaction: UserInteraction) => void;
   onCleared?: () => void;
   className?: string;
 }
 
-export default function InteractionControls({
-  animeId,
-  initialInteraction,
-  onSaved,
-  onCleared,
-  className = "",
-}: InteractionControlsProps) {
+export default function InteractionControls({ animeId, totalEpisodes, initialInteraction, onSaved, onCleared, className = "" }: InteractionControlsProps) {
   const [rating, setRating] = useState(initialInteraction?.rating ?? 0);
   const [watchStatus, setWatchStatus] = useState(initialInteraction?.watch_status ?? "");
   const [isSaving, setIsSaving] = useState(false);
@@ -46,34 +29,32 @@ export default function InteractionControls({
     setWatchStatus(initialInteraction?.watch_status ?? "");
   }, [initialInteraction?.rating, initialInteraction?.watch_status]);
 
-  const saveInteraction = async (nextRating: number, nextStatus: string) => {
-    const previousRating = rating;
-    const previousStatus = watchStatus;
+  const save = async (nextRating: number, nextStatus: string) => {
+    const previous = { rating, watchStatus };
+    const status = nextStatus || (nextRating ? "Completed" : "Plan to Watch");
     setRating(nextRating);
-    setWatchStatus(nextStatus);
+    setWatchStatus(status);
     setError("");
     setIsSaving(true);
-
     try {
+      const episodes = status === "Completed" && totalEpisodes ? totalEpisodes : initialInteraction?.episodes_watched ?? 0;
+      const watched = status === "Completed" && totalEpisodes
+        ? Array.from({ length: totalEpisodes }, (_, index) => `1:${index + 1}`)
+        : initialInteraction?.watched_episodes ?? [];
       const saved = await api.put(`/users/me/interactions/${animeId}`, {
-        anime_id: animeId,
-        watch_status: nextStatus,
-        episodes_watched: initialInteraction?.episodes_watched ?? 0,
-        watched_episodes: initialInteraction?.watched_episodes ?? [],
-        rating: nextRating || null,
+        anime_id: animeId, watch_status: status, episodes_watched: episodes, watched_episodes: watched, rating: nextRating || null,
       });
       onSaved?.(saved);
     } catch (requestError) {
-      setRating(previousRating);
-      setWatchStatus(previousStatus);
+      setRating(previous.rating);
+      setWatchStatus(previous.watchStatus);
       setError(requestError instanceof Error ? requestError.message : "Could not save your selection.");
     } finally {
       setIsSaving(false);
     }
   };
 
-  const clearInteraction = async () => {
-    if (!initialInteraction) return;
+  const clear = async () => {
     setError("");
     setIsSaving(true);
     try {
@@ -82,49 +63,41 @@ export default function InteractionControls({
       setWatchStatus("");
       onCleared?.();
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not clear your selection.");
+      setError(requestError instanceof Error ? requestError.message : "Could not remove this title.");
     } finally {
       setIsSaving(false);
     }
   };
 
   return (
-    <div className={`interaction-controls ${className}`} aria-label="Your anime status and rating">
-      <div className="rating-control">
-        <span className="interaction-label">Your rating</span>
-        <div className="star-row" role="group" aria-label="Rate this anime">
+    <div className={`controls ${className}`}>
+      <div className="controls-row">
+        <div className="stars" role="group" aria-label="Your rating">
           {[1, 2, 3, 4, 5].map((star) => (
             <button
               key={star}
               type="button"
-              aria-label={`Rate ${star} out of 5`}
-              aria-pressed={star === rating}
-              className={star <= rating ? "active" : ""}
+              aria-label={star === rating ? `Remove ${star}-star rating` : `Rate ${star} out of 5`}
+              aria-pressed={star <= rating}
+              className={star <= rating ? "on" : ""}
               disabled={isSaving}
-              onClick={() => void saveInteraction(star, watchStatus)}
+              onClick={() => void save(star === rating ? 0 : star, watchStatus)}
             >
-              <Star size={16} fill="currentColor" />
+              <Star size={17} fill="currentColor" strokeWidth={1.5} />
             </button>
           ))}
         </div>
+        {isSaving ? <span className="saving"><Loader2 size={14} className="spin" /></span>
+          : initialInteraction && <button type="button" className="clear-btn" aria-label="Remove from my list" title="Remove from my list" onClick={() => void clear()}><X size={14} /></button>}
       </div>
-
-      <label className={`status-control ${watchStatus ? "" : "is-unselected"}`}>
-        <span className="interaction-label">Watch status</span>
-        <select
-          value={watchStatus}
-          disabled={isSaving}
-          onChange={(event) => void saveInteraction(rating, event.target.value)}
-        >
-          <option value="" disabled>Choose status</option>
+      <label className={`status-select ${watchStatus ? "has-val" : "empty-val"}`}>
+        <span className="sr-only">Watch status</span>
+        <select value={watchStatus} disabled={isSaving} onChange={(event) => void save(rating, event.target.value)}>
+          <option value="" disabled>+ Add to list</option>
           {WATCH_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
         </select>
       </label>
-
-      {initialInteraction && <button type="button" className="clear-interaction" aria-label="Clear rating and status" title="Clear rating and status" disabled={isSaving} onClick={() => void clearInteraction()}><X size={14} /></button>}
-
-      {isSaving && <span className="interaction-saving"><Loader2 size={13} className="animate-spin" /> Saving</span>}
-      {error && <p className="interaction-error" role="alert">{error}</p>}
+      {error && <p className="error-text" role="alert">{error}</p>}
     </div>
   );
 }

@@ -1,112 +1,79 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import InteractionControls, { type UserInteraction } from "@/components/features/InteractionControls";
-import { api } from "@/lib/api";
+import { EyeOff, Layers, ListChecks, Star, X } from "lucide-react";
+import InteractionControls from "@/components/features/InteractionControls";
+import FranchiseControls from "@/components/features/FranchiseControls";
+import EpisodeTracker from "@/components/features/EpisodeTracker";
+import { coverFallback, DEFAULT_COVER } from "@/lib/basePath";
+import { displayTitle, type Anime, type UserInteraction } from "@/lib/types";
+
+export type FranchiseHandlers = {
+  saved: UserInteraction[];
+  onSaved: (rows: Anime[]) => void;
+  onCleared: (animeIds: number[]) => void;
+};
 
 interface AnimeCardProps {
-  anime: {
-    id: string;
-    anime_id: number;
-    title: string;
-    english_title?: string | null;
-    synopsis?: string;
-    image_url: string;
-    genres: string[];
-    total_episodes: number | null;
-    status: string;
-    score?: number | null;
-    userInteraction?: UserInteraction;
-  };
+  anime: Anime;
   onInteractionSaved?: (animeId: number, interaction: UserInteraction) => void;
   onInteractionCleared?: (animeId: number) => void;
-  onDoubleRightClick?: (animeId: number) => void;
+  onHide?: (animeId: number) => void;
+  franchise?: FranchiseHandlers;
 }
 
-export default function AnimeCard({ anime, onInteractionSaved, onInteractionCleared, onDoubleRightClick }: AnimeCardProps) {
-  const lastRightClickAt = useRef(0);
-  const [showEpisodes, setShowEpisodes] = useState(false);
-  const [isSavingEpisodes, setIsSavingEpisodes] = useState(false);
-  const episodeCount = anime.total_episodes || 0;
-  const watchedEpisodes = new Set(anime.userInteraction?.watched_episodes || []);
-  const isCompleted = anime.userInteraction?.watch_status === "Completed";
-  const watchedCount = isCompleted ? episodeCount : Math.max(watchedEpisodes.size, anime.userInteraction?.episodes_watched || 0);
-  const progressPercent = episodeCount ? Math.min(100, (watchedCount / episodeCount) * 100) : 0;
+const formatLabel = (type?: string | null) => (type === "TV" ? "Series" : type === "MOVIE" ? "Movie" : type || "Anime");
 
-  const toggleEpisode = async (season: number, episode: number) => {
-    if (!anime.userInteraction || !episodeCount || isSavingEpisodes) return;
-    const key = `${season}:${episode}`;
-    const next = new Set(watchedEpisodes);
-    if (next.has(key)) {
-      for (let current = episode; current <= episodeCount; current += 1) next.delete(`${season}:${current}`);
-    } else {
-      for (let current = 1; current <= episode; current += 1) next.add(`${season}:${current}`);
-    }
-    setIsSavingEpisodes(true);
-    try {
-      const saved = await api.put(`/users/me/interactions/${anime.anime_id}`, {
-        anime_id: anime.anime_id,
-        watch_status: anime.userInteraction.watch_status,
-        episodes_watched: next.size,
-        watched_episodes: [...next],
-        rating: anime.userInteraction.rating || null,
-      });
-      onInteractionSaved?.(anime.anime_id, saved);
-    } finally {
-      setIsSavingEpisodes(false);
-    }
-  };
+export default function AnimeCard({ anime, onInteractionSaved, onInteractionCleared, onHide, franchise }: AnimeCardProps) {
+  const [showEpisodes, setShowEpisodes] = useState(false);
+  const asFranchise = Boolean(franchise && anime.group_key && (anime.franchise_count ?? 0) > 1);
+  const interaction = anime.userInteraction;
+  const total = anime.total_episodes || 0;
+  const watched = interaction?.watch_status === "Completed" ? total : Math.max(interaction?.episodes_watched ?? 0, interaction?.watched_episodes?.length ?? 0);
+  const href = asFranchise ? `/franchise/?key=${encodeURIComponent(anime.group_key!)}` : `/anime/?id=${anime.anime_id}`;
+  const title = asFranchise ? anime.group_title || displayTitle(anime) : displayTitle(anime);
+  const airing = anime.status && !/finished/i.test(anime.status) ? anime.status.replace("Currently Airing", "Airing") : null;
+  const tracked = asFranchise ? (franchise!.saved.length > 0) : Boolean(interaction);
 
   return (
-    <motion.article
-      className="anime-card"
-      whileHover={{ y: -4 }}
-      transition={{ duration: 0.2 }}
-      onDoubleClick={(event) => {
-        if ((event.target as HTMLElement).closest("button, select, input, label")) return;
-        setShowEpisodes((current) => !current);
-      }}
-      onContextMenu={(event) => {
-        if (!onDoubleRightClick) return;
-        event.preventDefault();
-        const now = Date.now();
-        if (now - lastRightClickAt.current < 450) {
-          lastRightClickAt.current = 0;
-          onDoubleRightClick(anime.anime_id);
-        } else {
-          lastRightClickAt.current = now;
-        }
-      }}
-    >
-      <div className="anime-card-cover">
-        <img src={anime.image_url || "/default-cover.png"} alt={anime.english_title || anime.title} />
-        {anime.status !== "Finished Airing" && <div className="anime-badge">{anime.status}</div>}
+    <article className={`card ${tracked ? "is-tracked" : ""} ${asFranchise ? "is-franchise" : ""}`}>
+      <Link href={href} className="card-cover" aria-label={title}>
+        <img src={anime.image_url || DEFAULT_COVER} alt="" loading="lazy" onError={coverFallback} />
+        {anime.score != null && <span className="score-burst"><Star size={11} fill="currentColor" /> {anime.score.toFixed(1)}</span>}
+        {asFranchise ? <span className="franchise-flag"><Layers size={12} /> {anime.franchise_count} entries</span> : airing && <span className="status-pill">{airing}</span>}
+      </Link>
+      {onHide && <button type="button" className="card-hide" aria-label="Hide from this list" title="Hide from this list" onClick={() => onHide(anime.anime_id)}><EyeOff size={14} /></button>}
+      <div className="card-body">
+        <Link href={href} className="card-title" title={title}>{title}</Link>
+        <span className="card-sub">
+          {asFranchise
+            ? <>Seasons, films and specials. <Link className="inline-link" href={`/anime/?id=${anime.anime_id}`}>{displayTitle(anime)}</Link></>
+            : [formatLabel(anime.media_type), anime.year, total ? `${total} ep` : null].filter(Boolean).join(", ")}
+        </span>
+        {!asFranchise && interaction && total > 0 && watched > 0 && interaction.watch_status !== "Completed" && <div className="progress" title={`${watched}/${total} episodes`}><span style={{ width: `${(watched / total) * 100}%` }} /></div>}
+        {asFranchise
+          ? <FranchiseControls groupKey={anime.group_key!} count={anime.franchise_count!} saved={franchise!.saved} onSaved={franchise!.onSaved} onCleared={franchise!.onCleared} />
+          : <InteractionControls
+            animeId={anime.anime_id}
+            totalEpisodes={anime.total_episodes}
+            initialInteraction={interaction}
+            onSaved={(saved) => onInteractionSaved?.(anime.anime_id, saved)}
+            onCleared={() => onInteractionCleared?.(anime.anime_id)}
+          />}
+        {!asFranchise && interaction && total > 1 && <div className="card-actions"><button type="button" className="link-btn" onClick={() => setShowEpisodes(true)}><ListChecks size={14} /> Episodes {watched}/{total}</button></div>}
       </div>
-      <div className="anime-card-content">
-        <Link className="anime-card-title" href={`/anime/${anime.anime_id}`} title={anime.english_title || anime.title} onDoubleClick={(event) => { event.preventDefault(); setShowEpisodes((current) => !current); }}>{anime.english_title || anime.title}</Link>
-        {anime.english_title && anime.english_title !== anime.title && <span className="original-anime-title">{anime.title}</span>}
-        <p>{anime.synopsis || "No description available for this title yet."}</p>
-        <div className="genre-row">
-          {anime.genres.slice(0, 3).map((genre) => <span key={genre}>{genre}</span>)}
+      {showEpisodes && (
+        <div className="episode-sheet" role="dialog" aria-modal="true" aria-label={`Episodes of ${displayTitle(anime)}`} onClick={() => setShowEpisodes(false)}>
+          <div className="panel" onClick={(event) => event.stopPropagation()}>
+            <div className="section-head" style={{ marginBottom: "0.75rem" }}>
+              <h3 style={{ margin: 0 }}>{displayTitle(anime)}</h3>
+              <button type="button" className="icon-btn" aria-label="Close" onClick={() => setShowEpisodes(false)}><X size={16} /></button>
+            </div>
+            <EpisodeTracker animeId={anime.anime_id} totalEpisodes={total} interaction={interaction} onSaved={(saved) => onInteractionSaved?.(anime.anime_id, saved)} />
+          </div>
         </div>
-        {anime.score != null && <span className="community-score">MAL {anime.score.toFixed(1)}</span>}
-        <InteractionControls
-          animeId={anime.anime_id}
-          initialInteraction={anime.userInteraction}
-          onSaved={(interaction) => onInteractionSaved?.(anime.anime_id, interaction)}
-          onCleared={() => onInteractionCleared?.(anime.anime_id)}
-        />
-        {watchedCount > 0 && !isCompleted && <div className="episode-progress" aria-label={`${watchedCount} of ${episodeCount || "some"} episodes watched`}><span style={{ width: `${progressPercent}%` }} /></div>}
-        {showEpisodes && <div className="episode-tracker" onDoubleClick={(event) => event.stopPropagation()}>
-          <div className="episode-tracker-heading"><span>Episodes</span><small>{isCompleted ? "All episodes complete" : "Select your progress"}</small></div>
-          {episodeCount > 0 ? <div className="episode-season"><strong>Season 1</strong><div className="episode-list">{Array.from({ length: episodeCount }, (_, index) => index + 1).map((episode) => {
-            const checked = isCompleted || watchedEpisodes.has(`1:${episode}`);
-            return <label key={episode} className={checked ? "watched" : ""}><input type="checkbox" checked={checked} disabled={!anime.userInteraction || isCompleted || isSavingEpisodes} onChange={() => void toggleEpisode(1, episode)} /><span>{episode}</span></label>;
-          })}</div></div> : <small className="episode-empty">Episode count unavailable.</small>}
-        </div>}
-      </div>
-    </motion.article>
+      )}
+    </article>
   );
 }
